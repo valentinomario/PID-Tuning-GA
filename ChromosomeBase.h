@@ -56,11 +56,11 @@ private:
 
 template<typename Gene>
 std::ostream& ChromosomeBase<Gene>::print(std::ostream& os) const{
-    os<<"{";
+    os<<"[";
     for(int i = 0; i<(CHROMOSOME_LENGTH); i++){
-        os << "\"" << Genetic_Material[i] << "\", ";
+        os << Genetic_Material[i] << ", ";
     }
-    os << solution_fitness <<"}";
+    os << solution_fitness <<"]";
     return os;
 }
 

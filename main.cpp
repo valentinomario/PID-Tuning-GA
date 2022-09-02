@@ -16,7 +16,8 @@ float fitness_function(const Chromosome& c){
                                                 {matlabPtr->getVariable(u"G"),
                                                  matlabPtr->getVariable(u"dt"),
                                                  testing_parameters}    );
-    return cost[0];
+    double cost_ = cost[0];
+    return 1.0/(1.0+cost_);
 }
 
 int main() {
@@ -32,22 +33,21 @@ int main() {
     cout<<"Working directory: " << path << endl;
 
     matlabPtr->eval(u"G = tf(1,[1 1 1 0]);");
-    matlabPtr->eval(u"dt = 0.01;");
+    matlabPtr->eval(u"dt = 0.001;");
 
 
     Params p;
-    p.GENE_MIN = -5.0;
-    p.GENE_MAX = 5.0;
-    p.MUTATION_RATE = 0.2;
+    p.GENE_MIN = 0;
+    p.GENE_MAX = 3.0;
+    p.MUTATION_RATE = 0.02;
     p.SELECTION_METHOD = TRUNCATION_SELECTION;
-    p.CROSSOVER_METHOD = SINGLE_POINT_CROSSOVER;
-    p.MAX_GENERATIONS = 25;
-    p.TARGET_FITNESS = 5;
-    p.ELITISM = 10;
-    p.TRUNCATE = 70;
+    p.CROSSOVER_METHOD = UNIFORM_CROSSOVER;
+    p.MAX_GENERATIONS = 10;
+    p.TARGET_FITNESS = 1;
+    p.ELITISM = 2;
+    p.TRUNCATE = 5;
     p.VERBOSE = true;
-    p.POPULATION_SIZE = 100;
-    p.REPEAT_PARENTS_SELECTION = false;
+    p.POPULATION_SIZE = 25;
     p.FITNESS_FUNCTION = std::move(fitness_function);
     p.OUTPUT_FILE = true;
 

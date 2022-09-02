@@ -27,7 +27,6 @@ GeneticAlgorithm::GeneticAlgorithm(Params &p) : params(std::move(p)){
         output_file.open(filename,std::fstream::out);
 
     }
-
     current_generation = -1;
     if(params.ELITISM>params.POPULATION_SIZE){
         log("Elitism greater than population size",ERROR, "GA Constructor");
@@ -80,15 +79,20 @@ void GeneticAlgorithm::log(std::string message, LogClass logClass, std::string c
 
 void GeneticAlgorithm::output() {
     if(output_file.is_open()){
-        for(int i = 0; i<=current_generation;i++) {
-            output_file<<"Sim{"<<i+1<<"} = {\n";
+        for(int i = 0; i<current_generation;i++) {
+            //output_file<<"Sim{"<<i+1<<"} = {\n";
+            //output_file<<"history(:,:,"<<i+1<<") = ";
             for(int j = 0; j<params.POPULATION_SIZE;j++) {
+                output_file<<"individual("<<j+1<<",:,"<<i+1<<") = ";
                 output_file << generation_history[i].Individuals[j];
-                output_file<<";"<<std::endl;
+                //output_file<<";"<<std::endl;
+                output_file<<";\n";
             }
-            output_file<<"};\n";
+            //output_file<<"];\n";
         }
-
+        output_file<<"history = individual(1:size(individual,1),1:(size(individual,2)-1),1:size(individual,3));\n";
+        output_file<<"fitness = individual(1:size(individual,1),4,1:size(individual,3));\n";
+        output_file<<"cost = 1./(1+fitness);\n";
     }else{
         log("Error, file is not open!",ERROR,"output");
     }
@@ -111,7 +115,7 @@ void GeneticAlgorithm::run() {
             break;
         case(Continue):
             std::sort(generation_history[current_generation].Individuals.begin(),
-                      generation_history[current_generation].Individuals.end(), std::less<>());
+                      generation_history[current_generation].Individuals.end(), std::greater<>());
             generation_history[current_generation].is_sorted = true;
             log("Maximum number of generations reached",WARNING,"run",true);
             break;
@@ -131,11 +135,11 @@ StopReason GeneticAlgorithm::step() {
     bool optimized = false;
     for(int i = 0; i<params.POPULATION_SIZE; i++){
         fit = params.FITNESS_FUNCTION(current_population.Individuals[i]);
-        if(fit <= params.TARGET_FITNESS) optimized |= true;
+        if(fit >= params.TARGET_FITNESS) optimized |= true;
         current_population.Individuals[i].set_fitness(fit);
     }
     std::sort(current_population.Individuals.begin(),
-              current_population.Individuals.end(), std::less<>());
+              current_population.Individuals.end(), std::greater<>());
     current_population.is_sorted = true;
 
     if(optimized)
@@ -143,7 +147,7 @@ StopReason GeneticAlgorithm::step() {
 
     log(std::string("Generation ") + std::to_string(current_generation), INFO, "step", true);
 
-    //Offspring
+    //New population
     Population new_population = Population();
 
     //Perform elitism
@@ -154,37 +158,24 @@ StopReason GeneticAlgorithm::step() {
     //Select parents and add to the new generation
     vector<Chromosome> rand_selected;
     int children = params.ELITISM;
-    int trials;
-    //TODO necessario? io lo toglierei anche perchè metto false a repeat parents selection
     while(children < params.POPULATION_SIZE) {
-        trials = 0;
-        do{
 
-            if (params.REPEAT_PARENTS_SELECTION && (trials > params.MAX_REPETITIONS)) {
-                params.REPEAT_PARENTS_SELECTION = false;
-                log("No more repeating of parent's selection");
-            }
-            if (params.REPEAT_PARENTS_SELECTION) {
-                trials++;
-            }
+        switch(params.SELECTION_METHOD) {
+            case ROULETTE_WHEEL_SELECTION:
+                rand_selected = perform_roulette_selection(2);
+                break;
+            case TOURNAMENT_SELECTION:
+                if(params.TOURNAMENT_SIZE==0) return FatalError;
+                rand_selected = perform_tournament_selection(2,params.TOURNAMENT_SIZE);
+                break;
+            case TRUNCATION_SELECTION:
+                rand_selected = perform_truncation_selection(2,0, params.TRUNCATE);
+                break;
+            default:
+                log("Selection method not found",ERROR,"step");
+                return FatalError;
+        }
 
-
-            switch(params.SELECTION_METHOD) {
-                case ROULETTE_WHEEL_SELECTION:
-                    rand_selected = perform_roulette_selection(2);
-                    break;
-                case RANK_SELECTION:
-                    rand_selected = perform_rank_selection(2);
-                    break;
-                case TRUNCATION_SELECTION:
-                    rand_selected = perform_truncation_selection(2,params.ELITISM, params.TRUNCATE-1);
-                    break;
-                default:
-                    log("Selection method not found",ERROR,"step");
-                    return FatalError;
-            }
-        }while((rand_selected[0].Genetic_Material == rand_selected[1].Genetic_Material) &&
-                params.REPEAT_PARENTS_SELECTION);
 
         //Crossover
         switch(params.CROSSOVER_METHOD){
@@ -192,7 +183,7 @@ StopReason GeneticAlgorithm::step() {
                 perform_single_point_crossover(&rand_selected[0], &rand_selected[1]);
                 break;
             case UNIFORM_CROSSOVER:
-                //perform_uniform_crossover(&rand_selected[0], &rand_selected[1]);
+                perform_uniform_crossover(&rand_selected[0], &rand_selected[1]);
                 break;
             default:
                 log("Crossover method not found",ERROR,"step");
@@ -230,8 +221,6 @@ StopReason GeneticAlgorithm::step() {
 vector<Chromosome> GeneticAlgorithm::perform_roulette_selection(int n) {
     //https://stackoverflow.com/questions/10531565/how-should-roulette-wheel-selection-be-organized-for-non-sorted-population-in-g
 
-    //This works only for positive fitness values!!!!!
-
     vector<Chromosome> selected_individuals;
     Population& current_population = generation_history[current_generation];
 
@@ -251,8 +240,8 @@ vector<Chromosome> GeneticAlgorithm::perform_roulette_selection(int n) {
             R = R - (current_population.Individuals[i%params.POPULATION_SIZE].get_fitness());
             i++;
         }
-        //Found the individual:
-        selected_individuals.push_back(current_population.Individuals[(i-1)%params.POPULATION_SIZE]);
+        //Find the individual:
+        selected_individuals.push_back(current_population.Individuals[(i-1)]);
         new_members++;
     }
     return selected_individuals;
@@ -273,6 +262,37 @@ vector<Chromosome> GeneticAlgorithm::perform_rank_selection(int n) {
     return selected_individuals;
 }
 
+vector<Chromosome> GeneticAlgorithm::perform_tournament_selection(int n,int tournament_size){
+    vector<Chromosome> selected_individuals;
+    for(int j = 0; j<n;j++) {
+        //Choose individuals for tournament
+        vector<int> sorted_indeces;
+        vector<Chromosome> tournament_individuals;
+        int tmp;
+        while (sorted_indeces.size() < tournament_size) {
+            tmp = rand_int(0, params.POPULATION_SIZE - 1);
+            if (!std::count(sorted_indeces.begin(), sorted_indeces.end(), tmp)) {
+                sorted_indeces.push_back(tmp);
+                tournament_individuals.push_back(
+                        generation_history[current_generation].Individuals[tmp]);
+            }
+        }
+
+        //Find the best individual
+        float max = tournament_individuals[0].get_fitness();
+        int best_ind = 0;
+        for (int i = 1; i < tournament_size; i++) {
+            if (tournament_individuals[i].get_fitness() > max) {
+                max = tournament_individuals[i].get_fitness();
+                best_ind = i;
+            }
+        }
+        selected_individuals.push_back(tournament_individuals[best_ind]);
+    }
+
+    return selected_individuals;
+}
+
 void GeneticAlgorithm::perform_single_point_crossover(Chromosome *A, Chromosome *B) {
     if(A->Genetic_Material == B->Genetic_Material) return;
     int crossover_point = rand_int(1, Chromosome::CHROMOSOME_LENGTH-2);
@@ -286,6 +306,19 @@ void GeneticAlgorithm::perform_single_point_crossover(Chromosome *A, Chromosome 
     }
 }
 
+void GeneticAlgorithm::perform_uniform_crossover(Chromosome *A, Chromosome *B) {
+    if(A->Genetic_Material == B->Genetic_Material) return;
+    int p;
+    Gene tmp;
+    for(int i = 0; i<Chromosome::CHROMOSOME_LENGTH-1;i++){
+        p = rand_int(0,1);
+        if(p==1){
+            tmp = A->Genetic_Material[i];
+            A->Genetic_Material[i]=B->Genetic_Material[i];
+            B->Genetic_Material[i]=tmp;
+        }
+    }
+}
 double GeneticAlgorithm::rand_double(double min, double max) const {
     static thread_local std::mt19937 generator(time(nullptr) + clock());
     std::uniform_real_distribution<double> distribution(min,max);
@@ -300,24 +333,15 @@ int GeneticAlgorithm::rand_int(const int &min, const int &max) {
 
 vector<Chromosome> GeneticAlgorithm::perform_truncation_selection(int n, int begin,  int end) {
     Population& current_population = generation_history[current_generation];
-    int* selected_indeces = new int[n];
-    for(int i = 0; i<n; i++) selected_indeces[i] = -1;
 
+    int k = end-begin+1;
+    int* selected_indeces = new int[k];
+    for(int i = 0;i<k;i++) selected_indeces[i] = i;
+    std::random_shuffle(selected_indeces,selected_indeces+k);
     vector<Chromosome> selected_individuals;
 
-    if(!current_population.is_sorted) {
-        std::sort(current_population.Individuals.begin(),
-                  current_population.Individuals.end(), std::greater<>());
-        current_population.is_sorted = true;
-    }
-    int p;
-    for(int i = 0; i<n; i++){
-        do {
-            p = rand_int(begin, end);
-        }while((std::find(selected_indeces, selected_indeces+n, p)) != (selected_indeces+n));
-
-        selected_indeces[i] = p;
-        selected_individuals.push_back(current_population.Individuals[p]);
+    for(int i = 0; i<n;i++){
+        selected_individuals.push_back(current_population.Individuals[i]);
     }
     return selected_individuals;
 }

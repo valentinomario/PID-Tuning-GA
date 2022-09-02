@@ -14,7 +14,7 @@
 
 using std::vector;
 
-typedef char Gene;
+typedef float Gene;
 
 enum StopReason{
     MaximumFitnessReached,
@@ -31,6 +31,7 @@ enum LogClass{
 typedef enum{
     ROULETTE_WHEEL_SELECTION,
     RANK_SELECTION,
+    TOURNAMENT_SELECTION,
     TRUNCATION_SELECTION
 }Selection_Method;
 
@@ -50,9 +51,9 @@ struct Params{
     int ELITISM;
     double MUTATION_RATE;
     int TRUNCATE;
-    bool REPEAT_PARENTS_SELECTION;
-    int MAX_REPETITIONS;
+    int TOURNAMENT_SIZE;
     double TARGET_FITNESS;
+    bool MINIMIZATION_PROBLEM;
     bool VERBOSE;
     bool OUTPUT_FILE;
     Params(){
@@ -65,9 +66,8 @@ struct Params{
         ELITISM = 0;
         MUTATION_RATE = 0;
         TRUNCATE = 0;
-        REPEAT_PARENTS_SELECTION = false;
-        MAX_REPETITIONS = 0;
         TARGET_FITNESS = 0;
+        TOURNAMENT_SIZE = 0;
         VERBOSE = false;
         OUTPUT_FILE = false;
     }
@@ -96,6 +96,7 @@ private:
     //Core functions
     void new_generation(const Population& elem);
     StopReason step();
+    void user_stop_request(int signum);
     int binomial_coefficient(int n, int k) const;
     //Picking algorithms
     //TODO
@@ -103,6 +104,7 @@ private:
 
     vector<Chromosome> perform_truncation_selection(int n, int begin, int end);
     vector<Chromosome> perform_roulette_selection(int n = 1);
+    vector<Chromosome> perform_tournament_selection(int n = 1,int tournament_size=2);
 
     //Crossover algorithms
     void perform_single_point_crossover(Chromosome* A, Chromosome* B);
