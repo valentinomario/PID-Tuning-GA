@@ -25,7 +25,7 @@ GeneticAlgorithm::GeneticAlgorithm(Params &p) : params(std::move(p)){
         filename.append(".gaoutput");
 
         output_file.open(filename,std::fstream::out);
-
+        output_file<<"%"<<filename<<std::endl;
     }
     current_generation = -1;
     if(params.ELITISM>params.POPULATION_SIZE){
@@ -93,6 +93,14 @@ void GeneticAlgorithm::output() {
         output_file<<"history = individual(1:size(individual,1),1:(size(individual,2)-1),1:size(individual,3));\n";
         output_file<<"fitness = individual(1:size(individual,1),4,1:size(individual,3));\n";
         output_file<<"cost = 1./(1+fitness);\n";
+        output_file<<"POPULATION_SIZE="<<params.POPULATION_SIZE<<";\n";
+        output_file<<"SELECTION_METHOD="<<params.SELECTION_METHOD<<";\n";
+        output_file<<"CROSSOVER_METHOD="<<params.CROSSOVER_METHOD<<";\n";
+        output_file<<"MUTATION_RATE="<<params.MUTATION_RATE<<";\n";
+        output_file<<"MAX_GENERATIONS="<<params.MAX_GENERATIONS<<";\n";
+        output_file<<"ELITISM="<<params.ELITISM<<";\n";
+        if(params.SELECTION_METHOD == TRUNCATION_SELECTION) output_file<<"TRUNCATE="<<params.TRUNCATE<<";\n";
+
     }else{
         log("Error, file is not open!",ERROR,"output");
     }
@@ -108,7 +116,7 @@ void GeneticAlgorithm::run() {
 
     switch (stopReason) {
         case (MaximumFitnessReached):
-            log("Problem optimized, target fitness reached!", INFO, "run", true);
+            log("Problem optimized, target fitness reached!", INFO, "run", false);
             break;
         case (FatalError):
             log("Fatal error during iteration, aborting...", ERROR);
@@ -117,7 +125,7 @@ void GeneticAlgorithm::run() {
             std::sort(generation_history[current_generation].Individuals.begin(),
                       generation_history[current_generation].Individuals.end(), std::greater<>());
             generation_history[current_generation].is_sorted = true;
-            log("Maximum number of generations reached",WARNING,"run",true);
+            log("Maximum number of generations reached",WARNING,"run",false);
             break;
     }
     if(params.OUTPUT_FILE){
@@ -345,9 +353,4 @@ vector<Chromosome> GeneticAlgorithm::perform_truncation_selection(int n, int beg
     }
     return selected_individuals;
 }
-
-int GeneticAlgorithm::binomial_coefficient(int n, int k) const {
-    return std::tgamma(n)/(std::tgamma(k)*std::tgamma(n-k));
-}
-
 

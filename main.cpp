@@ -38,21 +38,21 @@ int main() {
 
     Params p;
     p.GENE_MIN = 0;
-    p.GENE_MAX = 3.0;
-    p.MUTATION_RATE = 0.02;
-    p.SELECTION_METHOD = TRUNCATION_SELECTION;
+    p.GENE_MAX = 1.0;
+    p.MUTATION_RATE = 0;
+    p.SELECTION_METHOD = ROULETTE_WHEEL_SELECTION;
+    p.TRUNCATE = 5;
     p.CROSSOVER_METHOD = UNIFORM_CROSSOVER;
     p.MAX_GENERATIONS = 10;
     p.TARGET_FITNESS = 1;
-    p.ELITISM = 2;
-    p.TRUNCATE = 5;
+    p.ELITISM = 20;
     p.VERBOSE = true;
     p.POPULATION_SIZE = 25;
     p.FITNESS_FUNCTION = std::move(fitness_function);
     p.OUTPUT_FILE = true;
 
     GeneticAlgorithm GA(p);
-    GA.run();
+    //GA.run();
     return 0;
 }
 

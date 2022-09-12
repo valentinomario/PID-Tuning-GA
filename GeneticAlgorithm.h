@@ -93,15 +93,14 @@ private:
     int current_generation;
     Params params;
     std::ofstream output_file;
+
     //Core functions
     void new_generation(const Population& elem);
     StopReason step();
     void user_stop_request(int signum);
-    int binomial_coefficient(int n, int k) const;
-    //Picking algorithms
-    //TODO
-    vector<Chromosome> perform_rank_selection(int n = 1);
 
+    //Selection algorithms
+    vector<Chromosome> perform_rank_selection(int n = 1);   //TODO
     vector<Chromosome> perform_truncation_selection(int n, int begin, int end);
     vector<Chromosome> perform_roulette_selection(int n = 1);
     vector<Chromosome> perform_tournament_selection(int n = 1,int tournament_size=2);
