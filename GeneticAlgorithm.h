@@ -117,4 +117,4 @@ private:
     void output();
 };
 
-#endif //MYGA_GENETICALGORITHM_H
+#endif //FYGA_GENETICALGORITHM_H
