@@ -1,3 +1,5 @@
+# Genetic Algorithm for Controller Tuning
+
 This thesis focuses on the implementation of a genetic algorithm in C++ language for tuning controllers. The genetic algorithm, inspired by the evolutionary processes of nature, was chosen for its ability to explore large search spaces and to optimize complex solutions. After an introduction to the theory of genetic algorithms and their main applications, a library has been developed that allows to easily customize parameters and objective functions to fit different optimization problems. For experimental purposes, the library has been used to optimize the parameters of a PID controller, with the aim of minimizing error and improving the performance of the controlled system. The obtained results show how the genetic approach allows to achieve better solutions than traditional methods in a reasonable amount of time. Furthermore, the developed flexible architecture allows to apply the algorithm to more complex control systems, making it a versatile tool for applications in the automation field.
 
 Please, contact me if you wish to have more information or to read the thesis work available in italian.
